@@ -27,13 +27,12 @@ jobs:
         with:
           channel: 'stable'
 
+      - name: Install Dependencies
+        run: flutter pub get
+
       - name: Build Android App
-        uses: cedvdb/action-flutter-build-android@v1
-        with:
-          keystore-base64: ${{ secrets.ANDROID_RELEASE_KEY }}
-          keystore-password: "${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}"
-          build-cmd: flutter build apk --release
-          
+        run: flutter build apk --release
+
       - name: Rename APK to Rayhan ai
         run: |
           mkdir -p build/app/outputs/flutter-apk/
