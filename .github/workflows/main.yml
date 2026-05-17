@@ -28,12 +28,15 @@ jobs:
           channel: 'stable'
 
       - name: Install Dependencies
+        working-directory: ./Jarvis-Ai
         run: flutter pub get
 
       - name: Build Android App
+        working-directory: ./Jarvis-Ai
         run: flutter build apk --release
 
       - name: Rename APK to Rayhan ai
+        working-directory: ./Jarvis-Ai
         run: |
           mkdir -p build/app/outputs/flutter-apk/
           mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Rayhan_ai_2.apk || true
@@ -42,4 +45,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Rayhan-ai-2.APK
-          path: build/app/outputs/flutter-apk/Rayhan_ai_2.apk
+          path: Jarvis-Ai/build/app/outputs/flutter-apk/Rayhan_ai_2.apk
