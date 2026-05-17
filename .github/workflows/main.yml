@@ -1,4 +1,4 @@
-name: Build and distribute
+Name: Build and distribute
 
 on:
   push:
@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -33,10 +33,10 @@ jobs:
           working-directory: ./
           
       - name: Rename APK to Rayhan ai
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Rayhan_ai.apk
+        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Rayhan_ai_2.apk
 
       - name: Archive APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Rayhan-ai-2.APK
           path: build/app/outputs/flutter-apk/Rayhan_ai_2.apk
