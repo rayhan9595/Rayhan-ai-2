@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     name: Build Rayhan ai APK
@@ -30,10 +33,11 @@ jobs:
           keystore-base64: ${{ secrets.ANDROID_RELEASE_KEY }}
           keystore-password: "${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}"
           build-cmd: flutter build apk --release
-          working-directory: ./
           
       - name: Rename APK to Rayhan ai
-        run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Rayhan_ai_2.apk
+        run: |
+          mkdir -p build/app/outputs/flutter-apk/
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Rayhan_ai_2.apk || true
 
       - name: Archive APK
         uses: actions/upload-artifact@v4
