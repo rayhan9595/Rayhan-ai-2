@@ -34,10 +34,19 @@ jobs:
       - name: Unzip project
         run: |
           unzip -o "Jarvis_AI_Fixed_Project_3_Updated.zip" -d extracted_project
-          # প্রজেক্ট রুট ফোল্ডারটি খুঁজে বের করে একটি এনভায়রনমেন্ট ভেরিয়েবলে সেভ করা
           REAL_ROOT=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \;)
           echo "PROJECT_ROOT=$REAL_ROOT" >> $GITHUB_ENV
           echo "Found project root at: $REAL_ROOT"
+
+      - name: Enable AndroidX and Jetifier
+        run: |
+          cd "$PROJECT_ROOT/android"
+          # gradle.properties ফাইলে AndroidX সেটিংস যুক্ত করা হচ্ছে
+          touch gradle.properties
+          echo "android.useAndroidX=true" >> gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
+          echo "gradle.properties updated with AndroidX support!"
+          cat gradle.properties
 
       - name: Install dependencies
         run: |
