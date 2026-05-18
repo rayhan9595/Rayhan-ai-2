@@ -29,7 +29,7 @@ jobs:
 
       - name: Unzip Project File
         run: |
-          unzip "Jarvis_AI_Complete_Project 2 .zip" -d extracted_project
+          unzip "Jarvis_AI_Fixed_Project 3.zip" -d extracted_project
           PROJECT_ROOT=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \;)
           echo "PROJECT_PATH=$PROJECT_ROOT" >> $GITHUB_ENV
           echo "Project found at: $PROJECT_ROOT"
@@ -66,15 +66,14 @@ jobs:
         run: |
           cd "$PROJECT_PATH"
           
-          # ১. AndroidManifest.xml আপডেট (v2 embedding মেটাডাটা যোগ করা)
+          # ১. AndroidManifest.xml আপডেট
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           if [ -f "$MANIFEST_PATH" ]; then
-            # পুরোনো ফ্ল্যাটার অ্যাপ্লিকেশন বা এমবেডিং সংক্রান্ত কোনো ট্যাগ থাকলে বা না থাকলেও আধুনিক মেটাডাটা পুশ করা
             sed -i '/<\/activity>/i \        <meta-data android:name="flutterEmbedding" android:value="2" \/>' "$MANIFEST_PATH"
             echo "AndroidManifest.xml updated for v2 embedding."
           fi
           
-          # ২. MainActivity.kt আপডেট (আধুনিক FlutterActivity এক্সটেন্ড করা)
+          # ২. MainActivity.kt আপডেট
           MAIN_ACTIVITY_PATH=$(find android/app/src/main -name "MainActivity.kt")
           if [ -f "$MAIN_ACTIVITY_PATH" ]; then
             cat << 'EOF' > "$MAIN_ACTIVITY_PATH"
