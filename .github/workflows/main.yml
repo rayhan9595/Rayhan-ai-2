@@ -33,7 +33,9 @@ jobs:
 
       - name: Unzip project
         run: |
-          unzip -o "Jarvis_AI_Fixed_Project_3_Updated.zip" -d extracted_project
+          # গিটহাবে আপনার আপলোড করা নতুন ফাইনাল জিপ ফাইলটি আনজিপ করা হচ্ছে
+          # যদি ফাইলে স্পেস থাকে তবে "Jarvis_AI_Fixed_Project_Final 2.zip" ব্যবহার করুন
+          unzip -o "Jarvis_AI_Fixed_Project_Final 2.zip" -d extracted_project || unzip -o "Jarvis_AI_Fixed_Project_Final_2.zip" -d extracted_project
           REAL_ROOT=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \;)
           echo "PROJECT_ROOT=$REAL_ROOT" >> $GITHUB_ENV
 
@@ -43,29 +45,6 @@ jobs:
           touch gradle.properties
           echo "android.useAndroidX=true" >> gradle.properties
           echo "android.enableJetifier=true" >> gradle.properties
-
-      - name: Fix Specific Uninitialized Final Fields
-        run: |
-          cd "$PROJECT_ROOT"
-          echo "Repairing uninitialized final fields in target files..."
-          
-          # শুধুমাত্র নির্দিষ্ট সমস্যাযুক্ত ফাইলগুলোতে final এর আগে late যুক্ত করে ডার্ট কম্পাইলারকে শান্ত করা
-          if [ -f "lib/core/self_aware/self_analyzer.dart" ]; then
-            sed -i 's/final String/late final String/g' lib/core/self_aware/self_analyzer.dart
-            sed -i 's/final List/late final List/g' lib/core/self_aware/self_analyzer.dart
-            sed -i 's/final bool/late final bool/g' lib/core/self_aware/self_analyzer.dart
-            sed -i 's/final int/late final int/g' lib/core/self_aware/self_analyzer.dart
-          fi
-
-          if [ -f "lib/core/self_aware/self_generator.dart" ]; then
-            sed -i 's/final String/late final String/g' lib/core/self_aware/self_generator.dart
-            sed -i 's/final List/late final List/g' lib/core/self_aware/self_generator.dart
-          fi
-
-          # গ্লোবাল লেভেলে ডবল ব্র্যাকেটের যেকোনো অবশিষ্টাংশ পরিষ্কার করা
-          find lib/ -name "*.dart" -type f -exec sed -i 's/<<Database>/\<Database\>/g' {} +
-          find lib/ -name "*.dart" -type f -exec sed -i 's/<<AutomationState>/\<AutomationState\>/g' {} +
-          echo "Target files repaired successfully!"
 
       - name: Install dependencies
         run: |
