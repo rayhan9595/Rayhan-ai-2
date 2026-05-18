@@ -1,80 +1,111 @@
 name: Build and distribute
 
 on:
-push:
-branches:
-- main
+  push:
+    branches:
+      - main
 
 env:
-FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-build:
-name: Build Rayhan ai APK
-runs-on: ubuntu-latest
+  build:
+    name: Build Rayhan ai APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
-  - name: Setup Java
-    uses: actions/setup-java@v4
-    with:
-      distribution: zulu
-      java-version: '17'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
 
-  - name: Setup Flutter
-    uses: subosito/flutter-action@v2
-    with:
-      channel: stable
+      - name: Unzip Project File
+        run: |
+          unzip "Jarvis_AI_Complete_Project 2 .zip" -d extracted_project
+          PROJECT_ROOT=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \;)
+          echo "PROJECT_PATH=$PROJECT_ROOT" >> $GITHUB_ENV
+          echo "Project found at: $PROJECT_ROOT"
 
-  - name: Unzip Project File
-    run: |
-      unzip "Jarvis_AI_Complete_Project 2 .zip" -d extracted_project
+      - name: Fix and Recreate pubspec.yaml
+        run: |
+          cd "$PROJECT_PATH"
+          rm -f pubspec.yaml
+          cat << 'EOF' > pubspec.yaml
+          name: self_aware_automation
+          description: "A new Flutter project for Jarvis AI."
+          publish_to: 'none'
+          version: 1.0.0+1
 
-      PROJECT_ROOT=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
+          environment:
+            sdk: '>=3.0.0 <4.0.0'
 
-      echo "PROJECT_PATH=$PROJECT_ROOT" >> $GITHUB_ENV
+          dependencies:
+            flutter:
+              sdk: flutter
+            cupertino_icons: ^1.0.6
+            flutter_bloc: ^8.1.3
 
-      echo "Project found at: $PROJECT_ROOT"
+          dev_dependencies:
+            flutter_test:
+              sdk: flutter
+            flutter_lints: ^3.0.0
 
-  - name: Fix Android V1 Embedding
-    run: |
-      cd "$PROJECT_PATH"
+          flutter:
+            uses-material-design: true
+          EOF
 
-      MAIN_ACTIVITY=$(find android/app/src/main -name "MainActivity.kt" | head -n 1)
+      - name: Fix Android v1 Embedding to v2 Embedding
+        run: |
+          cd "$PROJECT_PATH"
+          
+          # ১. AndroidManifest.xml আপডেট (v2 embedding মেটাডাটা যোগ করা)
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST_PATH" ]; then
+            # পুরোনো ফ্ল্যাটার অ্যাপ্লিকেশন বা এমবেডিং সংক্রান্ত কোনো ট্যাগ থাকলে বা না থাকলেও আধুনিক মেটাডাটা পুশ করা
+            sed -i '/<\/activity>/i \        <meta-data android:name="flutterEmbedding" android:value="2" \/>' "$MANIFEST_PATH"
+            echo "AndroidManifest.xml updated for v2 embedding."
+          fi
+          
+          # ২. MainActivity.kt আপডেট (আধুনিক FlutterActivity এক্সটেন্ড করা)
+          MAIN_ACTIVITY_PATH=$(find android/app/src/main -name "MainActivity.kt")
+          if [ -f "$MAIN_ACTIVITY_PATH" ]; then
+            cat << 'EOF' > "$MAIN_ACTIVITY_PATH"
+            package com.jarvis.self_aware_automation
 
-      echo "MainActivity path: $MAIN_ACTIVITY"
+            import io.flutter.embedding.android.FlutterActivity
 
-      cat << 'EOF' > "$MAIN_ACTIVITY"
-      package com.jarvis.self_aware_automation
+            class MainActivity: FlutterActivity() {
+            }
+            EOF
+            echo "MainActivity.kt fixed and rewritten for v2 embedding."
+          fi
 
-      import io.flutter.embedding.android.FlutterActivity
+      - name: Install Dependencies
+        run: |
+          cd "$PROJECT_PATH"
+          flutter pub get
 
-      class MainActivity: FlutterActivity()
-      EOF
+      - name: Build Android App
+        run: |
+          cd "$PROJECT_PATH"
+          flutter build apk --release
 
-      echo "MainActivity fixed successfully!"
+      - name: Rename APK to Rayhan ai
+        run: |
+          cd "$PROJECT_PATH"
+          mkdir -p build/app/outputs/flutter-apk/
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Rayhan_ai_2.apk || true
 
-  - name: Install Dependencies
-    run: |
-      cd "$PROJECT_PATH"
-      flutter pub get
-
-  - name: Build APK
-    run: |
-      cd "$PROJECT_PATH"
-      flutter build apk --release
-
-  - name: Rename APK
-    run: |
-      cd "$PROJECT_PATH"
-
-      mv build/app/outputs/flutter-apk/app-release.apk \
-      build/app/outputs/flutter-apk/Rayhan_ai_2.apk
-
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: Rayhan-ai-2.APK
-      path: extracted_project/**/build/app/outputs/flutter-apk/Rayhan_ai_2.apk
+      - name: Archive APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rayhan-ai-2.APK
+          path: extracted_project/**/build/app/outputs/flutter-apk/Rayhan_ai_2.apk
