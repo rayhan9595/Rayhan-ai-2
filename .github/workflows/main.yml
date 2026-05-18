@@ -34,7 +34,7 @@ jobs:
       - name: Unzip project
         run: |
           # এখানে আপনার নতুন জিপ ফাইলের নাম হুবহু আপডেট করা হয়েছে
-          unzip -o "Jarvis_AI_Fixed_Project_Final_Corrected.zip" -d extracted_project
+          unzip -o "Jarvis_AI_Fixed_Project_v2.zip" -d extracted_project
           REAL_ROOT=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \;)
           echo "PROJECT_ROOT=$REAL_ROOT" >> $GITHUB_ENV
 
