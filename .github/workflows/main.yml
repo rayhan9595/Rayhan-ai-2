@@ -44,12 +44,11 @@ jobs:
           touch gradle.properties
           echo "android.useAndroidX=true" >> gradle.properties
           echo "android.enableJetifier=true" >> gradle.properties
-          echo "gradle.properties updated with AndroidX support!"
 
-      - name: AI Auto-Healing Code Fixer (Python)
+      - name: Global AI Auto-Healing Code Fixer (Python)
         run: |
           cd "$PROJECT_ROOT"
-          echo "Running advanced python fixer to auto-repair brackets and generic types..."
+          echo "Running global auto-repair for ALL dart files..."
           
           python3 -c '
           import os, re
@@ -60,14 +59,18 @@ jobs:
               
               original = content
               
-              # ১. ডবল জেনেরিক ব্র্যাকেট (<<) ফিক্স করা
+              # ১. গ্লোবাল ফিক্স: প্রজেক্টের যেকোনো ফাইলে কনস্ট্রাক্টর ছাড়া final ভ্যারিয়েবল থাকলে তার আগে late বসানো
+              # এটি সমস্ত "Final field is not initialized" এরর চিরতরে বন্ধ করবে
+              content = re.sub(r"(?<!late\s)final\s+([a-zA-Z0-9<>?_]+)\s+([a-zA-Z0-9_]+);", r"late final \1 \2;", content)
+              
+              # ২. ডবল জেনেরিক ব্র্যাকেট (<<) ফিক্স করা
               content = re.sub(r"<<\s*([a-zA-Z0-9_]+)\s*>", r"<\1>", content)
               content = content.replace("<<Database>", "<Database>")
               content = content.replace("<<AutomationState>", "<AutomationState>")
               content = content.replace("<<Application>", "<Application>")
               content = content.replace("<<WeatherData>", "<WeatherData>")
               
-              # ২. ভয়েস ব্লকের ভাঙা ক্লাস স্ট্রাকচার ও ব্র্যাকেট ফিক্স করা
+              # ৩. ভয়েস ব্লকের ভাঙা ক্লাস স্ট্রাকচার ফিক্স করা
               if "voice_bloc.dart" in file_path:
                   if "class StartListeningEvent" in content and "abstract class VoiceEvent" in content:
                       content = """import "package:flutter_bloc/flutter_bloc.dart";
@@ -102,7 +105,7 @@ jobs:
             }
           }"""
 
-              # ৩. ডাটাবেজ ফাইলের ব্র্যাকেট ব্যালেন্স ও গেটার ঠিক করা
+              # ৪. ডাটাবেজ ফাইলের স্ট্রাকচার ফিক্স করা
               if "sqlite_db.dart" in file_path:
                   content = """import "package:sqflite/sqflite.dart";
           import "package:path/path.dart";
@@ -136,10 +139,6 @@ jobs:
             }
           }"""
 
-              # ৪. ফাইনাল ভ্যারিয়েবল অথচ ইনিশিয়ালাইজ করা হয়নি এমন কোড late কীওয়ার্ড দিয়ে ফিক্স করা
-              if any(x in file_path for x in ["self_tester.dart", "self_deployer.dart", "api_client.dart", "permission_handler.dart"]):
-                  content = re.sub(r"final\s+([a-zA-Z0-9<>?]+)\s+([a-zA-Z0-9_]+);", r"late final \1 \2;", content)
-
               if content != original:
                   with open(file_path, "w", encoding="utf-8") as f:
                       f.write(content)
@@ -166,7 +165,6 @@ jobs:
           cd "$PROJECT_ROOT"
           mkdir -p ../../output_apk/
           find build/app/outputs/flutter-apk/ -name "app-release.apk" -exec cp {} ../../output_apk/Rayhan_ai_2.apk \;
-          echo "APK successfully copied and renamed!"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
