@@ -30,22 +30,24 @@ jobs:
       - name: Unzip Project File
         run: |
           unzip "Jarvis_AI_Complete_Project 2 .zip" -d extracted_project
-          # ভেতরের ফোল্ডার স্ট্রাকচার চেক করার জন্য
-          ls -R extracted_project
+          # প্রজেক্ট রুট ফোল্ডারটি খুঁজে বের করে একটি এনভায়রনমেন্ট ভেরিয়েবলে সেভ করা
+          PROJECT_ROOT=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \;)
+          echo "PROJECT_PATH=$PROJECT_ROOT" >> $GITHUB_ENV
+          echo "Project found at: $PROJECT_ROOT"
 
       - name: Install Dependencies
         run: |
-          cd extracted_project/*
+          cd "$PROJECT_PATH"
           flutter pub get
 
       - name: Build Android App
         run: |
-          cd extracted_project/*
+          cd "$PROJECT_PATH"
           flutter build apk --release
 
       - name: Rename APK to Rayhan ai
         run: |
-          cd extracted_project/*
+          cd "$PROJECT_PATH"
           mkdir -p build/app/outputs/flutter-apk/
           mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Rayhan_ai_2.apk || true
 
