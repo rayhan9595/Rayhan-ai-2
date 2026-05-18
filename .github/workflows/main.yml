@@ -1,92 +1,80 @@
 name: Build and distribute
 
 on:
-  push:
-    branches:
-      - main
+push:
+branches:
+- main
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build:
-    name: Build Rayhan ai APK
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+build:
+name: Build Rayhan ai APK
+runs-on: ubuntu-latest
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
+  - name: Setup Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: zulu
+      java-version: '17'
 
-      - name: Unzip Project File
-        run: |
-          unzip "Jarvis_AI_Complete_Project 2 .zip" -d extracted_project
-          # প্রজেক্ট রুট ফোল্ডারটি খুঁজে বের করে একটি এনভায়রনমেন্ট ভেরিয়েবলে সেভ করা
-          PROJECT_ROOT=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \;)
-          echo "PROJECT_PATH=$PROJECT_ROOT" >> $GITHUB_ENV
-          echo "Project found at: $PROJECT_ROOT"
+  - name: Setup Flutter
+    uses: subosito/flutter-action@v2
+    with:
+      channel: stable
 
-      - name: Fix and Recreate pubspec.yaml
-        run: |
-          cd "$PROJECT_PATH"
-          # পুরোনো বা খালি ফাইলটি মুছে ফেলা হচ্ছে
-          rm -f pubspec.yaml
-          
-          # একটি সম্পূর্ণ নতুন এবং সঠিক ফরম্যাটের pubspec.yaml তৈরি করা হচ্ছে
-          cat << 'EOF' > pubspec.yaml
-          name: self_aware_automation
-          description: "A new Flutter project for Jarvis AI."
-          publish_to: 'none'
-          version: 1.0.0+1
+  - name: Unzip Project File
+    run: |
+      unzip "Jarvis_AI_Complete_Project 2 .zip" -d extracted_project
 
-          environment:
-            sdk: '>=3.0.0 <4.0.0'
+      PROJECT_ROOT=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \; | head -n 1)
 
-          dependencies:
-            flutter:
-              sdk: flutter
-            cupertino_icons: ^1.0.6
-            flutter_bloc: ^8.1.3
+      echo "PROJECT_PATH=$PROJECT_ROOT" >> $GITHUB_ENV
 
-          dev_dependencies:
-            flutter_test:
-              sdk: flutter
-            flutter_lints: ^3.0.0
+      echo "Project found at: $PROJECT_ROOT"
 
-          flutter:
-            uses-material-design: true
-          EOF
-          
-          echo "New pubspec.yaml created successfully!"
-          cat pubspec.yaml
+  - name: Fix Android V1 Embedding
+    run: |
+      cd "$PROJECT_PATH"
 
-      - name: Install Dependencies
-        run: |
-          cd "$PROJECT_PATH"
-          flutter pub get
+      MAIN_ACTIVITY=$(find android/app/src/main -name "MainActivity.kt" | head -n 1)
 
-      - name: Build Android App
-        run: |
-          cd "$PROJECT_PATH"
-          flutter build apk --release
+      echo "MainActivity path: $MAIN_ACTIVITY"
 
-      - name: Rename APK to Rayhan ai
-        run: |
-          cd "$PROJECT_PATH"
-          mkdir -p build/app/outputs/flutter-apk/
-          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/Rayhan_ai_2.apk || true
+      cat << 'EOF' > "$MAIN_ACTIVITY"
+      package com.jarvis.self_aware_automation
 
-      - name: Archive APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Rayhan-ai-2.APK
-          path: extracted_project/**/build/app/outputs/flutter-apk/Rayhan_ai_2.apk
+      import io.flutter.embedding.android.FlutterActivity
+
+      class MainActivity: FlutterActivity()
+      EOF
+
+      echo "MainActivity fixed successfully!"
+
+  - name: Install Dependencies
+    run: |
+      cd "$PROJECT_PATH"
+      flutter pub get
+
+  - name: Build APK
+    run: |
+      cd "$PROJECT_PATH"
+      flutter build apk --release
+
+  - name: Rename APK
+    run: |
+      cd "$PROJECT_PATH"
+
+      mv build/app/outputs/flutter-apk/app-release.apk \
+      build/app/outputs/flutter-apk/Rayhan_ai_2.apk
+
+  - name: Upload APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: Rayhan-ai-2.APK
+      path: extracted_project/**/build/app/outputs/flutter-apk/Rayhan_ai_2.apk
