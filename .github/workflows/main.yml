@@ -70,7 +70,6 @@ jobs:
               # ২. ভয়েস ব্লকের ভাঙা ক্লাস স্ট্রাকচার ও ব্র্যাকেট ফিক্স করা
               if "voice_bloc.dart" in file_path:
                   if "class StartListeningEvent" in content and "abstract class VoiceEvent" in content:
-                      # যদি ইভেন্টগুলো ক্লাসের ভেতর ঢুকে যায়, সেগুলোকে বাইরে বের করে ফ্রেশ করা
                       content = """import "package:flutter_bloc/flutter_bloc.dart";
           import "package:equatable/equatable.dart";
 
@@ -137,9 +136,8 @@ jobs:
             }
           }"""
 
-              # ৪. ফাইনাল ভ্যারিয়েবল অথচ ইনিশিয়ালাইজ করা হয়নি এমন কোড বাইপাস (late কীওয়ার্ড যুক্ত করা)
+              # ৪. ফাইনাল ভ্যারিয়েবল অথচ ইনিশিয়ালাইজ করা হয়নি এমন কোড late কীওয়ার্ড দিয়ে ফিক্স করা
               if any(x in file_path for x in ["self_tester.dart", "self_deployer.dart", "api_client.dart", "permission_handler.dart"]):
-                  # final String এররগুলোর আগে late যোগ করে ইনিশিয়ালাইজেশন এরর এড়ানো
                   content = re.sub(r"final\s+([a-zA-Z0-9<>?]+)\s+([a-zA-Z0-9_]+);", r"late final \1 \2;", content)
 
               if content != original:
@@ -161,7 +159,6 @@ jobs:
       - name: Build APK
         run: |
           cd "$PROJECT_ROOT"
-          # এবার কোনো অবৈধ কমান্ড ছাড়া একদম অফিশিয়াল রিলিজ কমান্ড রান হবে
           flutter build apk --release
 
       - name: Rename and Move APK
