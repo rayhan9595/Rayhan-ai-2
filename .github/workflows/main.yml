@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      FORCE_JUST_SCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       - name: Checkout repository
@@ -33,8 +33,8 @@ jobs:
 
       - name: Unzip project
         run: |
-          # এখানে আপনার নতুন জিপ ফাইলের নাম হুবহু সেট করা হয়েছে
-          unzip -o "Jarvis_AI_Fixed_Project_Final 2.zip" -d extracted_project
+          # এখানে আপনার নতুন জিপ ফাইলের নাম হুবহু আপডেট করা হয়েছে
+          unzip -o "Jarvis_AI_Fixed_Project_Final_Corrected.zip" -d extracted_project
           REAL_ROOT=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \;)
           echo "PROJECT_ROOT=$REAL_ROOT" >> $GITHUB_ENV
 
@@ -44,27 +44,6 @@ jobs:
           touch gradle.properties
           echo "android.useAndroidX=true" >> gradle.properties
           echo "android.enableJetifier=true" >> gradle.properties
-
-      - name: Fix Specific Uninitialized Final Fields
-        run: |
-          cd "$PROJECT_ROOT"
-          echo "Repairing uninitialized final fields in target files..."
-          
-          if [ -f "lib/core/self_aware/self_analyzer.dart" ]; then
-            sed -i 's/final String/late final String/g' lib/core/self_aware/self_analyzer.dart
-            sed -i 's/final List/late final List/g' lib/core/self_aware/self_analyzer.dart
-            sed -i 's/final bool/late final bool/g' lib/core/self_aware/self_analyzer.dart
-            sed -i 's/final int/late final int/g' lib/core/self_aware/self_analyzer.dart
-          fi
-
-          if [ -f "lib/core/self_aware/self_generator.dart" ]; then
-            sed -i 's/final String/late final String/g' lib/core/self_aware/self_generator.dart
-            sed -i 's/final List/late final List/g' lib/core/self_aware/self_generator.dart
-          fi
-
-          find lib/ -name "*.dart" -type f -exec sed -i 's/<<Database>/\<Database\>/g' {} +
-          find lib/ -name "*.dart" -type f -exec sed -i 's/<<AutomationState>/\<AutomationState\>/g' {} +
-          echo "Target files repaired successfully!"
 
       - name: Install dependencies
         run: |
@@ -78,7 +57,6 @@ jobs:
 
       - name: Move APK to Output
         run: |
-          # পাথের অমিল দূর করতে সরাসরি রুট ডিরেক্টরিতে ফোল্ডার তৈরি ও ফাইল কপি
           mkdir -p output_apk
           cp "$PROJECT_ROOT/build/app/outputs/flutter-apk/app-release.apk" "output_apk/Rayhan_ai_2.apk"
           echo "APK successfully moved to root output path!"
