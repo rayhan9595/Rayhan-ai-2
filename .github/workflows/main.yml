@@ -1,82 +1,59 @@
-name: Rayhan AI - Auto Unzip & Build APK
+name: Build Max AI APK from Zip
 
 on:
   push:
-    branches: [ main, master, develop ]
-  pull_request:
-    branches: [ main, master ]
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  # রানারের মেমোরি বাড়িয়ে দেওয়া হলো যাতে OutOfMemoryError না আসে
-  GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=1024m"
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  build-apk:
-    name: Unzip & Build Release APK
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
-      # ১. গিটহাব রিপোজিটরি থেকে কোড নেওয়া
-      - uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      # ২. Jarvis_AI_Final_Fixed6.zip আনজিপ করা
-      - name: Decompress Project Root
-        run: |
-          unzip -o Jarvis_AI_Final_Fixed6.zip
-          if [ -d "root/jarvis_project" ]; then
-            echo "DeepSeek structure detected. Moving files to root..."
-            cp -r root/jarvis_project/* .
-            cp -r root/jarvis_project/.[!.]* . 2>/dev/null || true
-          elif [ -d "jarvis_project" ]; then
-            cp -r jarvis_project/* .
-            cp -r jarvis_project/.[!.]* . 2>/dev/null || true
-          fi
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'zulu'
+        cache: gradle
 
-      # 🛠️ ৩. কোটলিন ভার্সন অটো-আপগ্রেড করা (১.৬.০ থেকে ১.৯.০)
-      - name: Auto-Upgrade Kotlin Version
-        run: |
-          GRADLE_FILE="android/build.gradle"
-          if [ -f "$GRADLE_FILE" ]; then
-            echo "Upgrading ext.kotlin_version to 1.9.0..."
-            sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.0'/g" "$GRADLE_FILE"
-            sed -i "s/ext.kotlin_version=.*/ext.kotlin_version='1.9.0'/g" "$GRADLE_FILE"
-          fi
+    - name: Unzip Upgraded Project
+      run: |
+        echo "📦 Unzipping Jarvis_Sentinel_V4_Upgraded.zip..."
+        unzip -o Jarvis_Sentinel_V4_Upgraded.zip -d extracted_project
+        cd extracted_project
+        
+        # অ্যাপের নাম পরিবর্তন করে "Max AI" করা
+        echo "🏷️ Changing App Name to Max AI..."
+        find . -name "strings.xml" -exec sed -i 's/Jarvis/Max AI/g' {} +
+        find . -name "strings.xml" -exec sed -i 's/Jarvis-Ai/Max AI/g' {} +
 
-      # ৪. জাভা সেটআপ (JDK 17)
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    - name: Grant Execute Permission to Gradlew
+      run: |
+        cd extracted_project
+        if [ -f gradlew ]; then
+          chmod +x gradlew
+        else
+          echo "❌ gradlew not found in root, searching subdirectories..."
+          cd android && chmod +x gradlew || true
+        fi
 
-      # ۵. ফ্লাটার সেটআপ (ভার্সন ৩.২২.০)
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.22.0'
-          channel: 'stable'
+    - name: Build Debug APK with Gradle
+      run: |
+        cd extracted_project
+        if [ -f gradlew ]; then
+          ./gradlew assembleDebug --stacktrace
+        else
+          cd android && ./gradlew assembleDebug --stacktrace
+        fi
 
-      # ৬. অ্যান্ড্রয়েড এক্স কমপ্যাটিবিলিটি ফোর্স করা
-      - name: Force AndroidX Compatibility
-        run: |
-          mkdir -p android
-          echo "android.useAndroidX=true" >> android/gradle.properties
-          echo "android.enableJetifier=true" >> android/gradle.properties
-
-      # 💻 ৭. ডিপেন্ডেন্সি ডাউনলোড
-      - name: Install dependencies
-        run: flutter pub get
-
-      # 🚀 ৮. অ্যান্ড্রয়েড রিলিজ APK বিল্ড করা
-      - name: Build release APK
-        run: flutter build apk --release --split-per-abi --no-shrink --no-tree-shake-icons
-
-      # 📦 ৯. ফাইনাল APK আপলোড করা
-      - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: Rayhan-AI-release-apk
-          path: build/app/outputs/flutter-apk/*.apk
-          if-no-files-found: error
+    - name: Upload Finished APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Max-AI-Debug-APK
+        path: |
+          extracted_project/app/build/outputs/apk/debug/*.apk
+          extracted_project/android/app/build/outputs/apk/debug/*.apk
