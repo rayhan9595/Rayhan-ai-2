@@ -7,7 +7,7 @@ on:
     branches: [ main, master ]
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true # Node.js এর ডেপ্রিকেশন ওয়ার্নিং ফিক্স করার জন্য
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-apk:
@@ -16,19 +16,18 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      # ১. রিপোজিটরি থেকে জিপ ফাইলটি নেওয়া
+      # ১. গিটহাব রিপোজিটরি থেকে জিপ ফাইল নেওয়া
       - uses: actions/checkout@v4
 
-      # ২. জিপ ফাইল আনজিপ করা এবং ডিরেক্টরি লেভেল চেক করা
+      # ২. জিপ ফাইল আনজিপ করা
       - name: Decompress Project Zip
         run: |
           unzip -o Jarvis_AI_Final_Fixed3.zip
-          # যদি জিপ ফাইলটি কোনো ফোল্ডারের ভেতরে আনজিপ হয়ে থাকে, তবে ফাইলগুলোকে মেইন রুটে নিয়ে আসা
           if [ -d "jarvis_project" ]; then
             mv jarvis_project/* .
             mv jarvis_project/.[!.]* . 2>/dev/null || true
           fi
-          ls -la # সার্ভারে ফাইলগুলো কেমন দেখায় তা চেক করার জন্য
+          ls -la
 
       # ৩. জাভা সেটআপ (JDK 17)
       - name: Set up JDK 17
@@ -37,10 +36,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # ৪. ফ্লাটার সেটআপ
+      # 🛠️ ৪. ফ্লাটার সেটআপ (ভার্সন লক করা হয়েছে যেন গ্রেডল এরর না আসে)
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.22.0' # আপনার প্রজেক্টের গ্রেডল ফাইলের সাথে সামঞ্জস্যপূর্ণ ভার্সন
           channel: 'stable'
 
       # ৫. ডিপেন্ডেন্সি ডাউনলোড
@@ -53,7 +53,7 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release --split-per-abi
 
-      # 📦 ৭. ফাইনাল APK আপলোড
+      # 📦 ७. ফাইনাল APK আপলোড
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
