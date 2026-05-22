@@ -13,13 +13,12 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    # ১. প্রথমে জিপ ফাইলটি আনজিপ করে মেইন ডিরেক্টরিতে নিয়ে আসব
+    # ১. জিপ ফাইল আনজিপ করা
     - name: Unzip Upgraded Project
       run: |
         echo "📦 Unzipping Jarvis_Sentinel_V4_Upgraded.zip..."
         unzip -o Jarvis_Sentinel_V4_Upgraded.zip -d extracted_project
         
-        # ফাইলগুলো ঠিক কোন লেভেলে আছে তা নিশ্চিত করতে মুভ করা
         if [ -d "extracted_project/Jarvis-Ai" ]; then
           mv extracted_project/Jarvis-Ai/* .
           mv extracted_project/Jarvis-Ai/.[!.]* . 2>/dev/null || true
@@ -37,14 +36,21 @@ jobs:
         find . -name "strings.xml" -exec sed -i 's/Jarvis/Max AI/g' {} +
         find . -name "strings.xml" -exec sed -i 's/Jarvis-Ai/Max AI/g' {} +
 
-    # ২. জাভা সেটআপ করব
+    # ২. জাভা সেটআপ
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'zulu'
 
-    # ৩. গ্র্যাডল পারমিশন দেব
+    # 🔥 ৩. হারানো গ্র্যাডল র‍্যাপার জার ফাইল অটো-ডাউনলোড (মেইন ফিক্স)
+    - name: Download Missing Gradle Wrapper Jar
+      run: |
+        mkdir -p gradle/wrapper
+        echo "🌐 Downloading missing gradle-wrapper.jar..."
+        curl -L -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar
+
+    # ৪. পারমিশন ঠিক করা
     - name: Grant Execute Permission to Gradlew
       run: |
         if [ -f gradlew ]; then
@@ -53,7 +59,7 @@ jobs:
           cd android && chmod +x gradlew && cd ..
         fi
 
-    # ৪. নিখুঁত ইফ-এলস দিয়ে গ্র্যাডল রান করব (ফিক্সড)
+    # ৫. অ্যাপ বিল্ড করা
     - name: Build Debug APK with Gradle
       run: |
         if [ -f gradlew ]; then
@@ -62,7 +68,7 @@ jobs:
           cd android && ./gradlew assembleDebug --stacktrace
         fi
 
-    # ৫. এপিকে আপলোড করব
+    # ৬. ফাইনাল এপিকে আপলোড
     - name: Upload Finished APK Artifact
       uses: actions/upload-artifact@v4
       with:
