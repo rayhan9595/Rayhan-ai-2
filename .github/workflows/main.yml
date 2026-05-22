@@ -24,7 +24,6 @@ jobs:
         run: |
           unzip -o Jarvis_AI_Final_Fixed4.zip
           
-          # ডিপসিকের তৈরি করা ডাবল ফোল্ডার স্ট্রাকচার ফিক্স করা
           if [ -d "root/jarvis_project" ]; then
             echo "DeepSeek structure detected. Moving files to root..."
             cp -r root/jarvis_project/* .
@@ -33,41 +32,47 @@ jobs:
             cp -r jarvis_project/* .
             cp -r jarvis_project/.[!.]* . 2>/dev/null || true
           fi
-          
-          echo "------ Current Directory Files ------"
-          ls -la
 
-      # ৩. জাভা সেটআপ (JDK 17)
+      # 🛠️ ৩. smart_home.dart ফাইলের ভেতরের ভুল MQTT কোডটি অটো-ফিক্স করা
+      - name: Auto-Fix MQTT Code Error
+        run: |
+          if [ -f "lib/services/iot/smart_home.dart" ]; then
+            echo "Fixing smart_home.dart payload conversion..."
+            # ভুল মেথডটিকে mqtt_client লাইব্রেরির সঠিক bytesToStringAsString মেথড দ্বারা রিপ্লেস করা হলো
+            sed -i 's/pubMsg\.payload\.getPayloadAsString()/MqttPublishPayload.bytesToStringAsString(pubMsg.payload.message)/g' lib/services/iot/smart_home.dart
+          fi
+
+      # ৪. জাভা সেটআপ (JDK 17)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # ৪. ফ্লাটার সেটআপ (ভার্সন লক)
+      # ৫. ফ্লাটার সেটআপ (ভার্সন লক)
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
 
-      # 🛠️ ৫. অ্যান্ড্রয়েড এক্স কমপ্যাটিবিলিটি ফোর্স করা
+      # ৬. অ্যান্ড্রয়েড এক্স কমপ্যাটিবিলিটি ফোর্স করা
       - name: Force AndroidX Compatibility
         run: |
           mkdir -p android
           echo "android.useAndroidX=true" >> android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
-      # ৬. ডিপেন্ডেন্সি ডাউনলোড ও বিল্ড রান করা
+      # ৭. ডিপেন্ডেন্সি ডাউনলোড
       - name: Install dependencies
         run: |
           flutter pub get
 
-      # 🚀 ৭. অ্যান্ড্রয়েড রিলিজ APK বিল্ড করা
+      # 🚀 ৮. অ্যান্ড্রয়েড রিলিজ APK বিল্ড করা
       - name: Build release APK
         run: flutter build apk --release --split-per-abi --no-shrink
 
-      # 📦 ৮. ফাইনাল APK আপলোড
+      # 📦 ৯. ফাইনাল APK আপলোড
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
