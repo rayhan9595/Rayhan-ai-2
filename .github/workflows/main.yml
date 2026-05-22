@@ -37,13 +37,14 @@ jobs:
         find . -name "strings.xml" -exec sed -i 's/Jarvis/Max AI/g' {} +
         find . -name "strings.xml" -exec sed -i 's/Jarvis-Ai/Max AI/g' {} +
 
-    # ২. জাভা সেটআপ করব কিন্তু কোনো ক্যাশ খোঁজাখুঁজি করব না (যাতে এরর না আসে)
+    # ২. জাভা সেটআপ করব
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'zulu'
 
+    # ৩. গ্র্যাডল পারমিশন দেব
     - name: Grant Execute Permission to Gradlew
       run: |
         if [ -f gradlew ]; then
@@ -52,14 +53,16 @@ jobs:
           cd android && chmod +x gradlew && cd ..
         fi
 
+    # ৪. নিখুঁত ইফ-এলস দিয়ে গ্র্যাডল রান করব (ফিক্সড)
     - name: Build Debug APK with Gradle
       run: |
         if [ -f gradlew ]; then
           ./gradlew assembleDebug --stacktrace
-        } else
+        else
           cd android && ./gradlew assembleDebug --stacktrace
         fi
 
+    # ৫. এপিকে আপলোড করব
     - name: Upload Finished APK Artifact
       uses: actions/upload-artifact@v4
       with:
