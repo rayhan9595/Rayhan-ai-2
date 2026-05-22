@@ -19,14 +19,23 @@ jobs:
       # ১. গিটহাব রিপোজিটরি থেকে জিপ ফাইল নেওয়া
       - uses: actions/checkout@v4
 
-      # ২. জিপ ফাইল আনজিপ করা
-      - name: Decompress Project Zip
+      # ২. জিপ ফাইল আনজিপ করা এবং ডাইনামিকলি রুট পাথ খুঁজে বের করা
+      - name: Decompress and Locate Project Root
         run: |
           unzip -o Jarvis_AI_Final_Fixed4.zip
-          if [ -d "jarvis_project" ]; then
-            mv jarvis_project/* .
-            mv jarvis_project/.[!.]* . 2>/dev/null || true
+          
+          # ডিপসিকের তৈরি করা ডাবল ফোল্ডার স্ট্রাকচার ফিক্স করা
+          if [ -d "root/jarvis_project" ]; then
+            echo "DeepSeek structure detected. Moving files to root..."
+            cp -r root/jarvis_project/* .
+            cp -r root/jarvis_project/.[!.]* . 2>/dev/null || true
+          elif [ -d "jarvis_project" ]; then
+            cp -r jarvis_project/* .
+            cp -r jarvis_project/.[!.]* . 2>/dev/null || true
           fi
+          
+          echo "------ Current Directory Files ------"
+          ls -la
 
       # ৩. জাভা সেটআপ (JDK 17)
       - name: Set up JDK 17
@@ -42,20 +51,19 @@ jobs:
           flutter-version: '3.22.0'
           channel: 'stable'
 
-      # 🛠️ ৫. প্লাগইন এরর এড়ানোর জন্য অ্যান্ড্রয়েড এক্স এবং গ্রেডল প্রোপার্টিজ ফোর্স করা
+      # 🛠️ ৫. অ্যান্ড্রয়েড এক্স কমপ্যাটিবিলিটি ফোর্স করা
       - name: Force AndroidX Compatibility
         run: |
           mkdir -p android
           echo "android.useAndroidX=true" >> android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
-      # ৬. ডিপেন্ডেন্সি ডাউনলোড
+      # ৬. ডিপেন্ডেন্সি ডাউনলোড ও বিল্ড রান করা
       - name: Install dependencies
         run: |
-          flutter pub cache clean -f
           flutter pub get
 
-      # 🚀 ৭. অ্যান্ড্রয়েড রিলিজ APK বিল্ড করা (প্লাগইন এরর বাইপাস করার জন্য ফ্ল্যাগসহ)
+      # 🚀 ৭. অ্যান্ড্রয়েড রিলিজ APK বিল্ড করা
       - name: Build release APK
         run: flutter build apk --release --split-per-abi --no-shrink
 
