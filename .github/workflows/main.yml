@@ -24,11 +24,9 @@ jobs:
         echo "📂 Jarvis_Sentinel_V4_Upgraded.zip আনজিপ করা হচ্ছে..."
         unzip -q Jarvis_Sentinel_V4_Upgraded.zip -d extracted_files
         
-        # ফাইলগুলো যেখানেই থাকুক, জোর করে মেইন ডিরেক্টরিতে আনা হচ্ছে
         cp -r extracted_files/* . 2>/dev/null || true
         cp -r extracted_files/.* . 2>/dev/null || true
         
-        # যদি সাবফোল্ডারে থাকে, সেখান থেকেও বের করা হচ্ছে
         if [ -d "Jarvis-Ai-main" ]; then
           cp -r Jarvis-Ai-main/* . 2>/dev/null || true
           cp -r Jarvis-Ai-main/.* . 2>/dev/null || true
@@ -38,9 +36,6 @@ jobs:
           cp -r Jarvis-Ai/.* . 2>/dev/null || true
         fi
         rm -rf extracted_files
-        
-        echo "🔍 রুট ডিরেক্টরির ফাইল চেক করা হচ্ছে:"
-        ls -la
 
     - name: 🏷️ 4. Rename App to Max AI
       run: |
@@ -48,13 +43,19 @@ jobs:
         find . -name "strings.xml" -exec sed -i 's/Jarvis/Max AI/g' {} +
         find . -name "strings.xml" -exec sed -i 's/Jarvis-Ai/Max AI/g' {} +
 
-    # 🔥 ৫. মেইন ফিক্স: জিপের ভেতরের ভাঙ্গা গ্র্যাডল বাদ দিয়ে গিটহাবের নিজস্ব গ্র্যাডল ইঞ্জিন দিয়ে সরাসরি বিল্ড করা
-    - name: 🏗️ 5. Build Debug APK using System Gradle
+    # 🔥 ৫. চূড়ান্ত ফিক্স: গিটহাবের গ্র্যাডল ৯ বাদ দিয়ে অফিসিয়াল অ্যাকশন দিয়ে গ্র্যাডল ৮.৪ সেটআপ
+    - name: 🛠️ 5. Setup Version Locked Gradle 8.4
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: 8.4
+
+    # 🔥 ৬. বিল্ড কমান্ড (সরাসরি ফ্রেশ গ্র্যাডল ৮.৪ ইঞ্জিন দিয়ে রান হবে)
+    - name: 🏗️ 6. Build Debug APK
       run: |
-        echo "⚙️ সার্ভারের নিজস্ব গ্র্যাডল দিয়ে কম্পাইল করা হচ্ছে..."
+        echo "🚀 লকিং গ্র্যাডল ৮.৪ ইঞ্জিন দিয়ে বিল্ড শুরু হচ্ছে..."
         gradle assembleDebug --stacktrace
 
-    - name: 📦 6. Upload Max AI APK
+    - name: 📦 7. Upload Max AI APK
       uses: actions/upload-artifact@v4
       with:
         name: Max-AI-Debug-APK
