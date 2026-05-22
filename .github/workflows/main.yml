@@ -1,4 +1,4 @@
-Name: Rayhan AI - Auto Unzip & Build APK
+name: Rayhan AI - Auto Unzip & Build APK
 
 on:
   push:
@@ -54,12 +54,12 @@ jobs:
           echo "android.useAndroidX=true" >> android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
 
-      # 💻 ৬. ডিপেন্ডেন্সি ডাউনলোড
+      # 💻 六. ডিপেন্ডেন্সি ডাউনলোড
       - name: Install dependencies
         run: |
           flutter pub get
 
-      # 🚀 ▀৭. অ্যান্ড্রয়েড রিলিজ APK বিল্ড করা
+      # 🚀 ৭. অ্যান্ড্রয়েড রিলিজ APK বিল্ড করা
       - name: Build release APK
         run: flutter build apk --release --split-per-abi --no-shrink --no-tree-shake-icons
 
