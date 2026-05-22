@@ -1,69 +1,129 @@
-name: Flutter Build APK
+name: Rayhan AI - Auto Build APK
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, master, develop ]
   pull_request:
-    branches:
-      - main
+    branches: [ main, master ]
 
 jobs:
-  build:
+  analyze:
+    name: Analyze & Lint
     runs-on: ubuntu-latest
-
-    env:
-      FORCE_JUST_SCRIPT_ACTIONS_TO_NODE24: true
+    timeout-minutes: 15
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
           channel: 'stable'
 
-      - name: Unzip project
-        run: |
-          # এখানে আপনার নতুন জিপ ফাইলের নাম হুবহু আপডেট করা হয়েছে
-          unzip -o "Jarvis_AI_Fixed_Project_v2.zip" -d extracted_project
-          REAL_ROOT=$(find extracted_project -name "pubspec.yaml" -exec dirname {} \;)
-          echo "PROJECT_ROOT=$REAL_ROOT" >> $GITHUB_ENV
-
-      - name: Enable AndroidX and Jetifier
-        run: |
-          cd "$PROJECT_ROOT/android"
-          touch gradle.properties
-          echo "android.useAndroidX=true" >> gradle.properties
-          echo "android.enableJetifier=true" >> gradle.properties
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.FLUTTER_HOME }}/.pub-cache
+            .dart_tool
+          key: pub-${{ hashFiles('pubspec.yaml', 'pubspec.lock') }}
+          restore-keys: pub-
 
       - name: Install dependencies
-        run: |
-          cd "$PROJECT_ROOT"
-          flutter pub get
+        run: flutter pub get
 
-      - name: Build APK
-        run: |
-          cd "$PROJECT_ROOT"
-          flutter build apk --release
+      - name: Run Dart analyzer
+        run: flutter analyze
 
-      - name: Move APK to Output
-        run: |
-          mkdir -p output_apk
-          cp "$PROJECT_ROOT/build/app/outputs/flutter-apk/app-release.apk" "output_apk/Rayhan_ai_2.apk"
-          echo "APK successfully moved to root output path!"
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: analyze
 
-      - name: Upload Artifact
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.FLUTTER_HOME }}/.pub-cache
+            .dart_tool
+          key: pub-${{ hashFiles('pubspec.yaml', 'pubspec.lock') }}
+          restore-keys: pub-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test
+
+  build-apk:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.FLUTTER_HOME }}/.pub-cache
+            .dart_tool
+          key: pub-${{ hashFiles('pubspec.yaml', 'pubspec.lock') }}
+          restore-keys: pub-
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android/.gradle
+          key: gradle-${{ hashFiles('android/**/*.gradle*', 'android/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release --split-per-abi
+
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Rayhan_ai_2_APK
-          path: output_apk/Rayhan_ai_2.apk
+          name: Rayhan-AI-release-apk
+          path: build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
