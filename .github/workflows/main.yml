@@ -13,7 +13,10 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      # ১. কোড সরাসরি রুট ডিরেক্টরিতে চেকআউট করার ট্রিকস
       - uses: actions/checkout@v4
+        with:
+          path: '.'
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -30,17 +33,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.FLUTTER_HOME }}/.pub-cache
+            ~/.pub-cache
             .dart_tool
-          key: pub-${{ hashFiles('**/pubspec.yaml', '**/pubspec.lock') }}
+          key: pub-${{ hashFiles('pubspec.yaml', 'pubspec.lock') }}
           restore-keys: pub-
 
       - name: Install dependencies
-        working-directory: . # কোড ফোল্ডারের ভেতরে থাকলে ডটের জায়গায় ফোল্ডারের নাম দিন (যেমন: jarvis_project)
         run: flutter pub get
 
       - name: Run Dart analyzer
-        working-directory: . # ডটের জায়গায় আপনার ফোল্ডারের নাম দিন
         run: flutter analyze
 
   test:
@@ -51,6 +52,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: '.'
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -67,17 +70,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.FLUTTER_HOME }}/.pub-cache
+            ~/.pub-cache
             .dart_tool
-          key: pub-${{ hashFiles('**/pubspec.yaml', '**/pubspec.lock') }}
+          key: pub-${{ hashFiles('pubspec.yaml', 'pubspec.lock') }}
           restore-keys: pub-
 
       - name: Install dependencies
-        working-directory: . # ডটের জায়গায় আপনার ফোল্ডারের নাম দিন
         run: flutter pub get
 
       - name: Run tests
-        working-directory: . # ডটের জায়গায় আপনার ফোল্ডারের নাম দিন
         run: flutter test
 
   build-apk:
@@ -88,6 +89,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: '.'
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -104,9 +107,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.FLUTTER_HOME }}/.pub-cache
+            ~/.pub-cache
             .dart_tool
-          key: pub-${{ hashFiles('**/pubspec.yaml', '**/pubspec.lock') }}
+          key: pub-${{ hashFiles('pubspec.yaml', 'pubspec.lock') }}
           restore-keys: pub-
 
       - name: Cache Gradle
@@ -116,20 +119,18 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
             android/.gradle
-          key: gradle-${{ hashFiles('**/android/**/*.gradle*', '**/android/gradle-wrapper.properties') }}
+          key: gradle-${{ hashFiles('android/**/*.gradle*', 'android/gradle-wrapper.properties') }}
           restore-keys: gradle-
 
       - name: Install dependencies
-        working-directory: . # ডটের জায়গায় আপনার ফোল্ডারের নাম দিন
         run: flutter pub get
 
       - name: Build release APK
-        working-directory: . # ডটের জায়গায় আপনার ফোল্ডারের নাম দিন
         run: flutter build apk --release --split-per-abi
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Rayhan-AI-release-apk
-          path: '**/build/app/outputs/flutter-apk/*.apk'
+          path: build/app/outputs/flutter-apk/*.apk
           if-no-files-found: error
