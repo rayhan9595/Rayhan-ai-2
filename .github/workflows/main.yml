@@ -10,79 +10,97 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
+    - name: 🚀 1. Checkout Repository
       uses: actions/checkout@v4
 
-    # ১. জিপ ফাইল আনজিপ করা এবং ফাইল খোঁজা
-    - name: Unzip Upgraded Project
+    - name: 📦 2. Unzip & View Files (লাইভ ট্র্যাকিং)
       run: |
-        echo "📦 Unzipping Jarvis_Sentinel_V4_Upgraded.zip..."
+        echo "=================================================="
+        echo "📂 জিপ ফাইল আনজিপ করা শুরু হচ্ছে..."
+        echo "=================================================="
+        
+        # জিপ ফাইল আনজিপ করা
         unzip -o Jarvis_Sentinel_V4_Upgraded.zip -d extracted_project
         
-        # ফাইলগুলো মেইন ডিরেক্টরিতে নিয়ে আসা
+        echo "🔍 আনজিপ হওয়া ফোল্ডারের ভেতরের স্ট্রাকচার পরীক্ষা করা হচ্ছে:"
+        ls -la extracted_project/
+        
+        # সঠিক ডিরেক্টরি চেক করে ফাইল মেইন রাস্তায় আনা
         if [ -d "extracted_project/Jarvis-Ai" ]; then
+          echo "📁 Jarvis-Ai ফোল্ডার পাওয়া গেছে! ফাইল মুভ করা হচ্ছে..."
           mv extracted_project/Jarvis-Ai/* .
           mv extracted_project/Jarvis-Ai/.[!.]* . 2>/dev/null || true
         elif [ -d "extracted_project/Jarvis-Ai-main" ]; then
+          echo "📁 Jarvis-Ai-main ফোল্ডার পাওয়া গেছে! ফাইল মুভ করা হচ্ছে..."
           mv extracted_project/Jarvis-Ai-main/* .
           mv extracted_project/Jarvis-Ai-main/.[!.]* . 2>/dev/null || true
         else
+          echo "📁 সরাসরি ফাইলগুলো রুট ডিরেক্টরিতে মুভ করা হচ্ছে..."
           mv extracted_project/* .
           mv extracted_project/.[!.]* . 2>/dev/null || true
         fi
         rm -rf extracted_project
         
-        # অ্যাপের নাম পরিবর্তন করে "Max AI" করা
-        echo "🏷️ Changing App Name to Max AI..."
+        echo "=================================================="
+        echo "✅ রুট ডিরেক্টরির বর্তমান ফাইল লিস্ট:"
+        echo "=================================================="
+        ls -la
+
+    - name: 🏷️ 3. Change App Name to Max AI
+      run: |
+        echo "🔄 অ্যাপের নাম 'Jarvis' থেকে বদলে 'Max AI' করা হচ্ছে..."
         find . -name "strings.xml" -exec sed -i 's/Jarvis/Max AI/g' {} +
         find . -name "strings.xml" -exec sed -i 's/Jarvis-Ai/Max AI/g' {} +
+        echo "✅ নাম পরিবর্তন সম্পন্ন হয়েছে।"
 
-    # ২. জাভা সেটআপ
-    - name: Set up JDK 17
+    - name: ☕ 4. Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'zulu'
 
-    # 🔥 ৩. ডাইনামিক উপায়ে সঠিক ফোল্ডারে Gradle Jar ডাউনলোড করা
-    - name: Fix and Download Gradle Wrapper Jar Dynamically
+    - name: 🌐 5. Inject & Verify Gradle Wrapper Jar
       run: |
-        echo "🔍 Finding where gradle/wrapper directory is located..."
-        # স্ক্রিপ্ট নিজেই খুঁজে বের করবে gradle ফোল্ডারটি কোথায় আছে
-        GRADLE_DIR=$(find . -type d -name "wrapper" | grep "gradle/wrapper" | head -n 1)
+        echo "=================================================="
+        echo "⚙️ গ্র্যাডল র‍্যাপার মেইন ক্লাস ইনজেক্ট করা হচ্ছে..."
+        echo "=================================================="
         
-        if [ -z "$GRADLE_DIR" ]; then
-          echo "📁 No gradle/wrapper found, creating one in root and android/..."
-          mkdir -p gradle/wrapper
-          mkdir -p android/gradle/wrapper 2>/dev/null || true
-          curl -L -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar
-          cp gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.jar 2>/dev/null || true
-        else
-          echo "✅ Found gradle/wrapper at: $GRADLE_DIR"
-          curl -L -o "$GRADLE_DIR/gradle-wrapper.jar" https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar
-        fi
-
-    # ৪. পারমিশন ঠিক করা
-    - name: Grant Execute Permission to Gradlew
-      run: |
+        # রুট এবং অ্যান্ড্রয়েড ফোল্ডারে ম্যানুয়ালি ডিরেক্টরি তৈরি
+        mkdir -p gradle/wrapper
+        mkdir -p android/gradle/wrapper 2>/dev/null || true
+        
+        # ফ্রেশ জার ফাইল ডাউনলোড
+        curl -L -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar
+        cp gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.jar 2>/dev/null || true
+        
+        echo "🔍 জার ফাইলটি ঠিক জায়গায় বসেছে কিনা তা চেক করা হচ্ছে:"
+        ls -l gradle/wrapper/gradle-wrapper.jar
+        
+        # গ্র্যাডল ফাইলগুলোকে এক্সিকিউট পারমিশন দেওয়া
         find . -name "gradlew" -exec chmod +x {} +
+        echo "✅ পারমিশন এবং জার ইনজেকশন সফল!"
 
-    # ৫. সঠিক ডিরেক্টরি খুঁজে নিয়ে গ্র্যাডল বিল্ড রান করা
-    - name: Build Debug APK with Gradle
+    - name: 🏗️ 6. Build Debug APK with Gradle (ফাইনাল রান)
       run: |
+        echo "=================================================="
+        echo "🚀 গ্র্যাডল কম্পাইলার চালু হচ্ছে... অ্যাপ বিল্ড শুরু!"
+        echo "=================================================="
+        
         if [ -f gradlew ]; then
+          echo "🏃 রুট gradlew দিয়ে বিল্ড করা হচ্ছে..."
           ./gradlew assembleDebug --stacktrace
         elif [ -f android/gradlew ]; then
+          echo "🏃 android ফোল্ডারের gradlew দিয়ে বিল্ড করা হচ্ছে..."
           cd android && ./gradlew assembleDebug --stacktrace
         else
-          # যদি আরও ভেতরে থাকে, তবে সেটা খুঁজে নিয়ে রান করবে
+          echo "🔍 অন্য ডিরেক্টরিতে gradlew খোঁজা হচ্ছে..."
           GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          echo "📍 gradlew পাওয়া গেছে এখানে: $GRADLEW_PATH"
           cd $(dirname "$GRADLEW_PATH")
           ./gradlew assembleDebug --stacktrace
         fi
 
-    # ৬. ফাইনাল এপিকে আপলোড
-    - name: Upload Finished APK Artifact
+    - name: 📦 7. Upload Finished APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: Max-AI-Debug-APK
