@@ -13,12 +13,13 @@ jobs:
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    # ১. জিপ ফাইল আনজিপ করা
+    # ১. জিপ ফাইল আনজিপ করা এবং ফাইল খোঁজা
     - name: Unzip Upgraded Project
       run: |
         echo "📦 Unzipping Jarvis_Sentinel_V4_Upgraded.zip..."
         unzip -o Jarvis_Sentinel_V4_Upgraded.zip -d extracted_project
         
+        # ফাইলগুলো মেইন ডিরেক্টরিতে নিয়ে আসা
         if [ -d "extracted_project/Jarvis-Ai" ]; then
           mv extracted_project/Jarvis-Ai/* .
           mv extracted_project/Jarvis-Ai/.[!.]* . 2>/dev/null || true
@@ -43,29 +44,41 @@ jobs:
         java-version: '17'
         distribution: 'zulu'
 
-    # 🔥 ৩. হারানো গ্র্যাডল র‍্যাপার জার ফাইল অটো-ডাউনলোড (মেইন ফিক্স)
-    - name: Download Missing Gradle Wrapper Jar
+    # 🔥 ৩. ডাইনামিক উপায়ে সঠিক ফোল্ডারে Gradle Jar ডাউনলোড করা
+    - name: Fix and Download Gradle Wrapper Jar Dynamically
       run: |
-        mkdir -p gradle/wrapper
-        echo "🌐 Downloading missing gradle-wrapper.jar..."
-        curl -L -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar
+        echo "🔍 Finding where gradle/wrapper directory is located..."
+        # স্ক্রিপ্ট নিজেই খুঁজে বের করবে gradle ফোল্ডারটি কোথায় আছে
+        GRADLE_DIR=$(find . -type d -name "wrapper" | grep "gradle/wrapper" | head -n 1)
+        
+        if [ -z "$GRADLE_DIR" ]; then
+          echo "📁 No gradle/wrapper found, creating one in root and android/..."
+          mkdir -p gradle/wrapper
+          mkdir -p android/gradle/wrapper 2>/dev/null || true
+          curl -L -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar
+          cp gradle/wrapper/gradle-wrapper.jar android/gradle/wrapper/gradle-wrapper.jar 2>/dev/null || true
+        else
+          echo "✅ Found gradle/wrapper at: $GRADLE_DIR"
+          curl -L -o "$GRADLE_DIR/gradle-wrapper.jar" https://raw.githubusercontent.com/gradle/gradle/v8.4/gradle/wrapper/gradle-wrapper.jar
+        fi
 
     # ৪. পারমিশন ঠিক করা
     - name: Grant Execute Permission to Gradlew
       run: |
-        if [ -f gradlew ]; then
-          chmod +x gradlew
-        else
-          cd android && chmod +x gradlew && cd ..
-        fi
+        find . -name "gradlew" -exec chmod +x {} +
 
-    # ৫. অ্যাপ বিল্ড করা
+    # ৫. সঠিক ডিরেক্টরি খুঁজে নিয়ে গ্র্যাডল বিল্ড রান করা
     - name: Build Debug APK with Gradle
       run: |
         if [ -f gradlew ]; then
           ./gradlew assembleDebug --stacktrace
-        else
+        elif [ -f android/gradlew ]; then
           cd android && ./gradlew assembleDebug --stacktrace
+        else
+          # যদি আরও ভেতরে থাকে, তবে সেটা খুঁজে নিয়ে রান করবে
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          cd $(dirname "$GRADLEW_PATH")
+          ./gradlew assembleDebug --stacktrace
         fi
 
     # ৬. ফাইনাল এপিকে আপলোড
