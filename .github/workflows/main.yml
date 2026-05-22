@@ -33,24 +33,23 @@ jobs:
             cp -r jarvis_project/.[!.]* . 2>/dev/null || true
           fi
 
-      # ৩. smart_home.dart ফাইলের ভেতরের ভুল MQTT কোডটি অটো-ফিক্স করা
+      # 🛠️ ৩. smart_home.dart ফাইলের ভেতরের ভুল MQTT কোডটি অটো-ফিক্স করা
       - name: Auto-Fix MQTT Code Error
         run: |
           if [ -f "lib/services/iot/smart_home.dart" ]; then
             echo "Fixing smart_home.dart payload conversion..."
-            sed -i 's/pubMsg\.payload\.getPayloadAsString()/MqttPublishMessage.bytesToStringAsString(pubMsg.payload.message)/g' lib/services/iot/smart_home.dart
+            # এখানে MqttPublishPayload ক্লাসের সঠিক মেথড ব্যবহার করা হলো
+            sed -i 's/pubMsg\.payload\.getPayloadAsString()/MqttPublishPayload.bytesToStringAsString(pubMsg.payload.message)/g' lib/services/iot/smart_home.dart
           fi
 
-      # 🛠️ ৪. জিপ ফাইলে মিসিং থাকা অ্যান্ড্রয়েড রিসোর্স ও থিম ফাইল অটো-জেনারেট করা
+      # ৪. জিপ ফাইলে মিসিং থাকা অ্যান্ড্রয়েড রিসোর্স ও থিম ফাইল অটো-জেনারেট করা
       - name: Auto-Generate Missing Android Resources
         run: |
           mkdir -p android/app/src/main/res/values
           mkdir -p android/app/src/main/res/mipmap-mdpi
           
-          # ডিফল্ট ব্ল্যাঙ্ক আইকন তৈরি (লোগো এরর বাইপাস করার জন্য)
           echo "" > android/app/src/main/res/mipmap-mdpi/ic_launcher.png
           
-          # মিসিং থিম (LaunchTheme & NormalTheme) তৈরি করা
           cat << 'EOF' > android/app/src/main/res/values/styles.xml
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
