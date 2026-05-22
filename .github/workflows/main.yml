@@ -1,4 +1,4 @@
-name: Rayhan AI - Auto Unzip & Build APK
+name: Rayhan AI - Auto Repair & Build APK
 
 on:
   push:
@@ -8,24 +8,23 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  OPENCODE_API_KEY: "sk-P8owQFAN173AgiATOXVS45OPN2vlbcctG8JxRyuDMXC3XOu727Ik3F4OQS4E0rDU"
 
 jobs:
   build-apk:
-    name: Unzip & Build Release APK
+    name: Unzip & Smart Build Release APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      # ১. গিটহাব রিপোজিটরি থেকে কোড নেওয়া
+      # ১. কোড চেকআউট করা
       - uses: actions/checkout@v4
 
-      # ২. নতুন Jarvis_AI_Final_Fixed5.zip আনজিপ করা এবং রুট পাথ সেট করা
-      - name: Decompress and Locate Project Root
+      # ২. জিপ ফাইল আনজিপ করা
+      - name: Decompress Project
         run: |
           unzip -o Jarvis_AI_Final_Fixed5.zip
-          
           if [ -d "root/jarvis_project" ]; then
-            echo "DeepSeek structure detected. Moving files to root..."
             cp -r root/jarvis_project/* .
             cp -r root/jarvis_project/.[!.]* . 2>/dev/null || true
           elif [ -d "jarvis_project" ]; then
@@ -33,50 +32,74 @@ jobs:
             cp -r jarvis_project/.[!.]* . 2>/dev/null || true
           fi
 
-      # 🛠️ ৩. MainActivity.kt ফাইলের ৪৭ নম্বর লাইনের সিনট্যাক্স এরর অটো-ফিক্স করা
-      - name: Auto-Fix MainActivity Kotlin Error
-        run: |
-          KOTLIN_FILE="android/app/src/main/kotlin/com/jarvis/self_aware_automation/MainActivity.kt"
-          if [ -f "$KOTLIN_FILE" ]; then
-            echo "MainActivity.kt found. Inspecting line 47..."
-            # ৪৭ নম্বর লাইনে যদি কোনো ভাঙা বা ইনকমপ্লিট কোড থাকে, তা সামলানোর জন্য
-            # বা সেটিকে সেমিকোলন/সিনট্যাক্স ঠিক করার জন্য একটি সেফ প্যাচ দেওয়া হলো
-            sed -i '47s/^[[:space:]]*$/\/\/ cleared empty typo/' "$KOTLIN_FILE"
-            # যদি লাইনে কোনো ভুল ক্যারেক্টার থাকে, কোডটি যাতে কম্পাইল হতে পারে তার ব্যবস্থা করা হচ্ছে
-            echo "Patching applied to Kotlin compiler step."
-          fi
-
-      # ৪. জাভা সেটআপ (JDK 17)
+      # ৩. এনভায়রনমেন্ট সেটআপ
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # ৫. ফ্লাটার সেটআপ (ভার্সন ৩.২২.০)
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
           channel: 'stable'
 
-      # ৬. অ্যান্ড্রয়েড এক্স কমপ্যাটিবিলিটি ফোর্স করা
-      - name: Force AndroidX Compatibility
+      - name: Force AndroidX
         run: |
           mkdir -p android
           echo "android.useAndroidX=true" >> android/gradle.properties
           echo "android.enableJetifier=true" >> android/gradle.properties
-
-      # 💻 ৭. ডিপেন্ডেন্সি ডাউনলোড
-      - name: Install dependencies
-        run: |
           flutter pub get
 
-      # 🚀 ৮. অ্যান্ড্রয়েড রিলিজ APK বিল্ড করা
-      - name: Build release APK
+      # 🚀 ৪. প্রথমবার বিল্ড করার চেষ্টা
+      - name: Initial Build Attempt
+        id: build_one
+        continue-on-error: true
         run: flutter build apk --release --split-per-abi --no-shrink --no-tree-shake-icons
 
-      # 📦 ৯. ফাইনাল APK আপলোড
+      # 🤖 ৫. বিল্ড ফেইল করলে ওপেনকোড এজেন্ট স্বয়ংক্রিয়ভাবে কোড ফিক্স করবে
+      - name: Auto-Repair via OpenCode API (If Failed)
+        if: steps.build_one.outcome == 'failure'
+        run: |
+          echo "⚠️ বিল্ড ফেইল করেছে! ওপেনকোড এজেন্ট দিয়ে MainActivity.kt ফিক্স করা হচ্ছে..."
+          
+          KOTLIN_FILE="android/app/src/main/kotlin/com/jarvis/self_aware_automation/MainActivity.kt"
+          
+          # ফাইলের ভেতরের কোড রিড করা
+          FILE_CONTENT=$(cat "$KOTLIN_FILE" | jq -aR .)
+          
+          # ওপেনকোড এপিআই-তে রিকোয়েস্ট পাঠানো কোডটি ফিক্স করার জন্য
+          RESPONSE=$(curl -s -X POST "https://api.opencode.ai/v1/chat/completions" \
+            -H "Authorization: Bearer $OPENCODE_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"model\": \"deepseek/deepseek-v4-flash-free\",
+              \"messages\": [
+                {\"role\": \"system\", \"content\": \"You are an expert Kotlin and Android developer. Fix syntax errors and return ONLY the complete valid Kotlin file content inside a markdown block or as plain text. No explanations.\"},
+                {\"role\": \"user\", \"content\": \"Fix the syntax error around line 47 (Expecting property name or receiver type / Unexpected tokens) in this MainActivity.kt file:\n\n$(cat $KOTLIN_FILE)\"}
+              ],
+              \"temperature\": 0.1
+            }")
+          
+          # এজেন্টের দেওয়া ফিক্সড কোডটি ফাইলে রাইট করা
+          echo "$RESPONSE" | jq -r '.choices[0].message.content' | sed -n '/```kotlin/,/```/p' | sed '1d;$d' > "$KOTLIN_FILE"
+          
+          # যদি মার্কডাউন ছাড়া প্লেইন টেক্সট দেয় তার ব্যাকআপ হ্যান্ডলিং
+          if [ ! -s "$KOTLIN_FILE" ]; then
+            echo "$RESPONSE" | jq -r '.choices[0].message.content' > "$KOTLIN_FILE"
+          fi
+          
+          echo "✅ ওপেনকোড স্বয়ংক্রিয়ভাবে MainActivity.kt ফিক্স করেছে।"
+
+      # 🔄 ৬. ফিক্স করার পর দ্বিতীয়বার বিল্ড করার চূড়ান্ত চেষ্টা
+      - name: Final Build Attempt After Auto-Repair
+        if: steps.build_one.outcome == 'failure'
+        run: |
+          echo "🔄 ফিক্সড কোড দিয়ে আবার বিল্ড করা হচ্ছে..."
+          flutter build apk --release --split-per-abi --no-shrink --no-tree-shake-icons
+
+      # 📦 ▀৭. ফাইনাল APK আপলোড
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
