@@ -27,7 +27,6 @@ jobs:
             mv jarvis_project/* .
             mv jarvis_project/.[!.]* . 2>/dev/null || true
           fi
-          ls -la
 
       # ৩. জাভা সেটআপ (JDK 17)
       - name: Set up JDK 17
@@ -36,24 +35,31 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # 🛠️ ৪. ফ্লাটার সেটআপ (ভার্সন লক করা হয়েছে যেন গ্রেডল এরর না আসে)
+      # ৪. ফ্লাটার সেটআপ (ভার্সন লক)
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0' # আপনার প্রজেক্টের গ্রেডল ফাইলের সাথে সামঞ্জস্যপূর্ণ ভার্সন
+          flutter-version: '3.22.0'
           channel: 'stable'
 
-      # ৫. ডিপেন্ডেন্সি ডাউনলোড
+      # 🛠️ ৫. প্লাগইন এরর এড়ানোর জন্য অ্যান্ড্রয়েড এক্স এবং গ্রেডল প্রোপার্টিজ ফোর্স করা
+      - name: Force AndroidX Compatibility
+        run: |
+          mkdir -p android
+          echo "android.useAndroidX=true" >> android/gradle.properties
+          echo "android.enableJetifier=true" >> android/gradle.properties
+
+      # ৬. ডিপেন্ডেন্সি ডাউনলোড
       - name: Install dependencies
         run: |
           flutter pub cache clean -f
           flutter pub get
 
-      # ৬. অ্যান্ড্রয়েড রিলিজ APK বিল্ড করা
+      # 🚀 ৭. অ্যান্ড্রয়েড রিলিজ APK বিল্ড করা (প্লাগইন এরর বাইপাস করার জন্য ফ্ল্যাগসহ)
       - name: Build release APK
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --split-per-abi --no-shrink
 
-      # 📦 ७. ফাইনাল APK আপলোড
+      # 📦 ৮. ফাইনাল APK আপলোড
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
